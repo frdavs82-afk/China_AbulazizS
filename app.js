@@ -2,6 +2,7 @@
 
 /* ==========================================
    CHINA_ABDULAZIZ — MAIN APP
+   Admin yuklagan rasmlar bilan ishlaydi
 ========================================== */
 
 const $ = (id) => document.getElementById(id);
@@ -10,104 +11,8 @@ const $ = (id) => document.getElementById(id);
    DEFAULT PRODUCTS
 ========================================== */
 
-const defaultProducts = [
-  {
-    id: 1,
-    name: "Premium qora futbolka",
-    category: "kiyim",
-    price: 120000,
-    image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800",
-    rating: 5,
-  },
-  {
-    id: 2,
-    name: "Oq klassik ko‘ylak",
-    category: "kiyim",
-    price: 185000,
-    image: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800",
-    rating: 5,
-  },
-  {
-    id: 3,
-    name: "Erkaklar qora shim",
-    category: "kiyim",
-    price: 210000,
-    image: "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=800",
-    rating: 4,
-  },
-  {
-    id: 4,
-    name: "Oversize futbolka",
-    category: "kiyim",
-    price: 145000,
-    image: "https://images.unsplash.com/photo-1503341504253-dff4815485f1?w=800",
-    rating: 5,
-  },
-  {
-    id: 5,
-    name: "Erkaklar sport sumkasi",
-    category: "sumka",
-    price: 220000,
-    image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=800",
-    rating: 5,
-  },
-  {
-    id: 6,
-    name: "Qora kundalik ryukzak",
-    category: "sumka",
-    price: 195000,
-    image: "https://images.unsplash.com/photo-1622560480654-d96214fdc887?w=800",
-    rating: 4,
-  },
-  {
-    id: 7,
-    name: "Sport krossovka",
-    category: "oyoq",
-    price: 350000,
-    image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800",
-    rating: 5,
-  },
-  {
-    id: 8,
-    name: "Oq kundalik krossovka",
-    category: "oyoq",
-    price: 320000,
-    image: "https://images.unsplash.com/photo-1549298916-b41d501d3772?w=800",
-    rating: 5,
-  },
-  {
-    id: 9,
-    name: "Qora erkaklar ko‘zoynagi",
-    category: "achki",
-    price: 95000,
-    image: "https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=800",
-    rating: 4,
-  },
-  {
-    id: 10,
-    name: "Classic quyosh ko‘zoynagi",
-    category: "achki",
-    price: 115000,
-    image: "https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=800",
-    rating: 5,
-  },
-  {
-    id: 11,
-    name: "Qora erkaklar kepkasi",
-    category: "kepka",
-    price: 85000,
-    image: "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=800",
-    rating: 5,
-  },
-  {
-    id: 12,
-    name: "Sport kepka",
-    category: "kepka",
-    price: 75000,
-    image: "https://images.unsplash.com/photo-1521369909029-2afed882baee?w=800",
-    rating: 4,
-  },
-];
+// Avtomatik mahsulotlar va begona rasmlar yo‘q.
+const defaultProducts = [];
 
 /* ==========================================
    STORAGE
@@ -127,27 +32,21 @@ function saveStorage(key, value) {
     localStorage.setItem(key, JSON.stringify(value));
     return true;
   } catch (error) {
-    showToast("Brauzer xotirasi to‘ldi!");
+    console.error("Saqlash xatosi:", error);
+    showToast("Xotira to‘ldi! Rasm hajmini kichraytiring.");
     return false;
   }
 }
 
-// Admin mahsulotlari
 let adminProducts = loadStorage("china_products", []);
 
 if (!Array.isArray(adminProducts)) {
   adminProducts = [];
 }
 
-// Takroriy ID bo‘lmasligi uchun
 const products = [
   ...defaultProducts,
-  ...adminProducts.filter(
-    (adminProduct) =>
-      !defaultProducts.some(
-        (defaultProduct) => defaultProduct.id === adminProduct.id,
-      ),
-  ),
+  ...adminProducts.filter((p) => p && p.id != null),
 ];
 
 let cart = loadStorage("china_cart", []);
@@ -189,7 +88,7 @@ const elements = {
 ========================================== */
 
 function money(value) {
-  return new Intl.NumberFormat("en-US").format(value) + "$";
+  return new Intl.NumberFormat("en-US").format(Number(value) || 0) + " so‘m";
 }
 
 function escapeHTML(value) {
@@ -210,10 +109,43 @@ function getProduct(id) {
   return products.find((product) => String(product.id) === String(id));
 }
 
+// Rasm manzilini o‘zgartirmasdan olish.
+// Data URL (base64) va oddiy rasm URL ishlaydi.
 function getImage(product) {
-  return escapeHTML(
-    product.image || "https://placehold.co/600x600?text=China+Abdulaziz",
-  );
+  const image = product?.image;
+
+  if (typeof image !== "string" || !image.trim()) {
+    return "";
+  }
+
+  return image;
+}
+
+function imageHTML(product, className = "") {
+  const image = getImage(product);
+
+  if (!image) {
+    return `
+      <div class="no-product-image">
+        <span>📷</span>
+        <small>Rasm yuklanmagan</small>
+      </div>
+    `;
+  }
+
+  return `
+    <img
+      class="${className}"
+      src="${escapeHTML(image)}"
+      alt="${escapeHTML(product.name)}"
+      loading="lazy"
+      onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+    >
+    <div class="image-error" style="display:none">
+      <span>📷</span>
+      <small>Rasm ochilmadi</small>
+    </div>
+  `;
 }
 
 /* ==========================================
@@ -224,7 +156,10 @@ let toastTimer;
 
 function showToast(message) {
   const toast = elements.toast;
-  if (!toast) return;
+  if (!toast) {
+    console.log(message);
+    return;
+  }
 
   toast.textContent = message;
   toast.classList.add("show");
@@ -257,22 +192,32 @@ function renderProducts() {
   if (!grid) return;
 
   const search = elements.searchInput?.value.trim().toLowerCase() || "";
+
   const category = elements.categoryFilter?.value || "all";
+
   const sorting = elements.sortFilter?.value || "default";
 
   const min = Math.max(0, Number($("minPrice")?.value) || 0);
+
   const maxValue = $("maxPrice")?.value;
   const max = maxValue ? Number(maxValue) : Infinity;
 
   let result = products.filter((product) => {
-    const matchesSearch = product.name.toLowerCase().includes(search);
+    if (!product) return false;
+
+    const name = String(product.name || "").toLowerCase();
+
+    const matchesSearch = name.includes(search);
 
     const matchesCategory = category === "all" || product.category === category;
 
     const matchesPrice =
       Number(product.price) >= min && Number(product.price) <= max;
 
-    return matchesSearch && matchesCategory && matchesPrice;
+    // Rasmsiz mahsulotni saytda ko‘rsatmaymiz.
+    const hasImage = Boolean(getImage(product));
+
+    return matchesSearch && matchesCategory && matchesPrice && hasImage;
   });
 
   if (sorting === "cheap") {
@@ -284,7 +229,7 @@ function renderProducts() {
   }
 
   if (sorting === "name") {
-    result.sort((a, b) => a.name.localeCompare(b.name, "uz"));
+    result.sort((a, b) => String(a.name).localeCompare(String(b.name), "uz"));
   }
 
   grid.innerHTML = result
@@ -296,19 +241,14 @@ function renderProducts() {
       return `
       <article class="product-card">
         <div class="product-image">
-          <img
-            src="${getImage(product)}"
-            alt="${escapeHTML(product.name)}"
-            loading="lazy"
-            onerror="this.src='https://placehold.co/600x600?text=China+Abdulaziz'"
-          >
+          ${imageHTML(product)}
 
           <span class="product-badge">CHINA</span>
 
           <button
             class="favorite-toggle ${favorite ? "active" : ""}"
             type="button"
-            onclick="toggleFavorite('${product.id}')"
+            onclick="toggleFavorite('${escapeHTML(product.id)}')"
           >${favorite ? "♥" : "♡"}</button>
         </div>
 
@@ -322,19 +262,21 @@ function renderProducts() {
           <div class="product-rating">★★★★★</div>
 
           <div class="product-bottom">
-            <span class="product-price">${money(product.price)}</span>
+            <span class="product-price">
+              ${money(product.price)}
+            </span>
 
             <button
               class="add-cart"
               type="button"
-              onclick="addToCart('${product.id}')"
+              onclick="addToCart('${escapeHTML(product.id)}')"
             >🛒 Savatga</button>
           </div>
 
           <button
             class="view-product"
             type="button"
-            onclick="showProduct('${product.id}')"
+            onclick="showProduct('${escapeHTML(product.id)}')"
           >Mahsulotni ko‘rish →</button>
         </div>
       </article>
@@ -364,10 +306,14 @@ function addToCart(id) {
   if (existing) {
     existing.quantity++;
   } else {
-    cart.push({ id: product.id, quantity: 1 });
+    cart.push({
+      id: product.id,
+      quantity: 1,
+    });
   }
 
-  saveStorage("china_cart", cart);
+  if (!saveStorage("china_cart", cart)) return;
+
   renderCart();
   showToast("✓ Mahsulot savatga qo‘shildi!");
 }
@@ -416,7 +362,7 @@ function renderCart() {
 
         return `
         <div class="cart-item">
-          <img src="${getImage(product)}" alt="${escapeHTML(product.name)}">
+          ${imageHTML(product)}
 
           <div class="cart-item-info">
             <h4>${escapeHTML(product.name)}</h4>
@@ -441,6 +387,7 @@ function renderCart() {
 
   const total = cart.reduce((sum, item) => {
     const product = getProduct(item.id);
+
     return sum + (product ? product.price * item.quantity : 0);
   }, 0);
 
@@ -464,6 +411,7 @@ function toggleFavorite(id) {
 
   if (exists) {
     favorites = favorites.filter((item) => String(item) !== String(id));
+
     showToast("Sevimlilardan olib tashlandi");
   } else {
     favorites.push(id);
@@ -491,18 +439,24 @@ function renderFavorites() {
     container.innerHTML = favorites
       .map((id) => {
         const product = getProduct(id);
-        if (!product) return "";
+
+        if (!product || !getImage(product)) return "";
 
         return `
         <div class="favorite-item">
-          <img src="${getImage(product)}" alt="${escapeHTML(product.name)}">
+          ${imageHTML(product)}
 
           <div>
             <h4>${escapeHTML(product.name)}</h4>
             <strong>${money(product.price)}</strong>
 
-            <button onclick="addToCart('${product.id}')">Savatga</button>
-            <button onclick="toggleFavorite('${product.id}')">♥ O‘chirish</button>
+            <button onclick="addToCart('${product.id}')">
+              Savatga
+            </button>
+
+            <button onclick="toggleFavorite('${product.id}')">
+              ♥ O‘chirish
+            </button>
           </div>
         </div>
       `;
@@ -521,31 +475,38 @@ function renderFavorites() {
 
 function showProduct(id) {
   const product = getProduct(id);
+
   if (!product || !elements.productDetails) return;
 
   elements.productDetails.innerHTML = `
     <div class="modal-product">
-      <img
-        src="${getImage(product)}"
-        alt="${escapeHTML(product.name)}"
-      >
+      ${imageHTML(product)}
 
       <span class="product-category">
         ${escapeHTML(categoryNames[product.category] || "Mahsulot")}
       </span>
 
       <h2>${escapeHTML(product.name)}</h2>
+
       <div class="product-rating">★★★★★</div>
-      <h3 class="product-price">${money(product.price)}</h3>
-      <p>${escapeHTML(product.description || "Sifatli mahsulot.")}</p>
 
-      <button class="add-cart" onclick="addToCart('${product.id}')">
-        🛒 Savatga qo‘shish
-      </button>
+      <h3 class="product-price">
+        ${money(product.price)}
+      </h3>
 
-      <button class="favorite-modal" onclick="toggleFavorite('${product.id}')">
-        ♥ Sevimlilarga
-      </button>
+      <p>
+        ${escapeHTML(product.description || "Sifatli mahsulot.")}
+      </p>
+
+      <button
+        class="add-cart"
+        onclick="addToCart('${product.id}')"
+      >🛒 Savatga qo‘shish</button>
+
+      <button
+        class="favorite-modal"
+        onclick="toggleFavorite('${product.id}')"
+      >♥ Sevimlilarga</button>
     </div>
   `;
 
@@ -608,6 +569,7 @@ elements.sortFilter?.addEventListener("change", renderProducts);
 
 $("applyPrice")?.addEventListener("click", () => {
   const min = Number($("minPrice")?.value || 0);
+
   const max = $("maxPrice")?.value ? Number($("maxPrice").value) : Infinity;
 
   if (min < 0 || max < 0 || min > max) {
@@ -651,7 +613,9 @@ document.querySelectorAll(".category-card").forEach((button) => {
 
     renderProducts();
 
-    $("products")?.scrollIntoView({ behavior: "smooth" });
+    $("products")?.scrollIntoView({
+      behavior: "smooth",
+    });
   });
 });
 
@@ -660,7 +624,10 @@ document.querySelectorAll(".category-card").forEach((button) => {
 ========================================== */
 
 $("cartBtn")?.addEventListener("click", () => openDrawer("cart"));
-$("favoriteBtn")?.addEventListener("click", () => openDrawer("favorites"));
+
+$("favoriteBtn")?.addEventListener("click", () => {
+  openDrawer("favorites");
+});
 
 $("closeCart")?.addEventListener("click", closeDrawers);
 $("closeFavorites")?.addEventListener("click", closeDrawers);
@@ -735,6 +702,7 @@ $("orderForm")?.addEventListener("submit", (event) => {
 
   const total = cart.reduce((sum, item) => {
     const product = getProduct(item.id);
+
     return sum + (product ? product.price * item.quantity : 0);
   }, 0);
 
@@ -765,34 +733,29 @@ document.addEventListener("keydown", (event) => {
 });
 
 /* ==========================================
-   ADMIN PRODUCTS LIVE UPDATE
+   ADMIN PRODUCTS UPDATE
 ========================================== */
 
 window.addEventListener("storage", (event) => {
-  if (event.key === "china_products") {
-    adminProducts = loadStorage("china_products", []);
+  if (event.key !== "china_products") return;
 
-    if (!Array.isArray(adminProducts)) {
-      adminProducts = [];
-    }
+  adminProducts = loadStorage("china_products", []);
 
-    products.splice(
-      0,
-      products.length,
-      ...defaultProducts,
-      ...adminProducts.filter(
-        (adminProduct) =>
-          !defaultProducts.some(
-            (defaultProduct) => defaultProduct.id === adminProduct.id,
-          ),
-      ),
-    );
-
-    renderProducts();
-    renderCart();
-    renderFavorites();
-    showToast("Mahsulotlar yangilandi!");
+  if (!Array.isArray(adminProducts)) {
+    adminProducts = [];
   }
+
+  products.splice(
+    0,
+    products.length,
+    ...adminProducts.filter((p) => p && p.id != null),
+  );
+
+  renderProducts();
+  renderCart();
+  renderFavorites();
+
+  showToast("Mahsulotlar yangilandi!");
 });
 
 /* ==========================================
